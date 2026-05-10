@@ -30,6 +30,15 @@ app.use((req, res, next) => {
 app.use('/api/experts', expertRoutes);
 app.use('/api/bookings', bookingRoutes);
 
+// --- Static File Serving for Production ---
+if (process.env.NODE_ENV === 'production') {
+  const path = require('path');
+  app.use(express.static(path.join(__dirname, '../client/dist')));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+  });
+}
+
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
