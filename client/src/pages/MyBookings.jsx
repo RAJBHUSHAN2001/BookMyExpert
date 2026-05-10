@@ -1,33 +1,41 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { Search, Mail, Calendar, Clock, User, Briefcase, ChevronRight } from 'lucide-react';
+import { Search, Mail, Calendar, Clock, User as UserIcon, Briefcase, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { useAuth } from '../AuthContext';
 
 const MyBookings = () => {
+  const { user: authUser } = useAuth();
   const [email, setEmail] = useState('');
   const [submittedEmail, setSubmittedEmail] = useState('');
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  // Auto-fetch if user is logged in
+  useEffect(() => {
+    if (authUser?.email) {
+      handleSearch(null, authUser.email);
+    }
+  }, [authUser]);
+
+  const handleSearch = async (e, forcedEmail) => {
+    if (e) e.preventDefault();
+    const searchEmail = forcedEmail || email;
+    
+    if (!searchEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(searchEmail)) {
       toast.error('Please enter a valid email address');
       return;
     }
 
     setLoading(true);
     try {
-      const { data } = await api.get(`/bookings?email=${encodeURIComponent(email)}`);
+      const { data } = await api.get(`/bookings?email=${encodeURIComponent(searchEmail)}`);
       setBookings(data.bookings);
-      setSubmittedEmail(email);
+      setSubmittedEmail(searchEmail);
       setSearched(true);
-      if (data.bookings.length > 0) {
-        toast.success(`Found ${data.bookings.length} booking(s)`);
-      }
     } catch (err) {
       toast.error(err.message || 'Failed to fetch bookings');
     } finally {
@@ -59,7 +67,7 @@ const MyBookings = () => {
           animate={{ y: 0, opacity: 1 }}
           className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400 mb-4 tracking-tight"
         >
-          My Bookings
+          {authUser ? 'My Appointments' : 'Find My Bookings'}
         </motion.h1>
         <motion.p 
           initial={{ y: 20, opacity: 0 }}
@@ -67,45 +75,51 @@ const MyBookings = () => {
           transition={{ delay: 0.1 }}
           className="text-gray-500 dark:text-gray-400 max-w-xl mx-auto text-lg"
         >
-          Enter your email address to manage your upcoming sessions.
+          {authUser 
+            ? `Viewing all sessions booked for ${authUser.name}`
+            : 'Enter your email address to manage your upcoming sessions.'}
         </motion.p>
       </div>
 
-      <motion.div 
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="max-w-xl mx-auto mb-20 relative z-10"
-      >
-        <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-2xl blur opacity-25 dark:opacity-40 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-        <form onSubmit={handleSearch} className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-800 p-2 flex">
-          <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
-            <Mail className="h-6 w-6 text-gray-400" />
-          </div>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="your@email.com"
-            className="block w-full pl-14 pr-4 py-4 bg-transparent border-none focus:ring-0 sm:text-lg transition-all outline-none text-gray-800 dark:text-white"
-            required
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex-shrink-0 flex items-center px-8 bg-blue-600 text-white text-base font-extrabold rounded-xl hover:bg-blue-700 transition-all shadow-md hover:shadow-lg disabled:bg-blue-400 disabled:shadow-none"
-          >
-            {loading ? (
-              <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <>Search <ChevronRight className="w-5 h-5 ml-1 hidden sm:block" /></>
-            )}
-          </button>
-        </form>
-      </motion.div>
+      {!authUser && (
+        <motion.div 
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="max-w-xl mx-auto mb-20 relative z-10"
+        >
+          <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-2xl blur opacity-25 dark:opacity-40 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+          <form onSubmit={handleSearch} className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-800 p-2 flex">
+            <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
+              <Mail className="h-6 w-6 text-gray-400" />
+            </div>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="your@email.com"
+              className="block w-full pl-14 pr-4 py-4 bg-transparent border-none focus:ring-0 sm:text-lg transition-all outline-none text-gray-800 dark:text-white"
+              required
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-shrink-0 flex items-center px-8 bg-blue-600 text-white text-base font-extrabold rounded-xl hover:bg-blue-700 transition-all shadow-md hover:shadow-lg disabled:bg-blue-400 disabled:shadow-none"
+            >
+              {loading ? (
+                <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <>Search <ChevronRight className="w-5 h-5 ml-1 hidden sm:block" /></>
+              )}
+            </button>
+          </form>
+        </motion.div>
+      )}
 
       <AnimatePresence mode="wait">
-        {searched && !loading && bookings.length === 0 && (
+        {loading ? (
+           <div key="loader" className="text-center py-20 dark:text-white">Loading appointments...</div>
+        ) : searched && bookings.length === 0 ? (
           <motion.div 
             key="empty"
             initial={{ opacity: 0, y: 20 }}
@@ -123,9 +137,7 @@ const MyBookings = () => {
               Browse Experts
             </Link>
           </motion.div>
-        )}
-
-        {searched && !loading && bookings.length > 0 && (
+        ) : searched && bookings.length > 0 && (
           <motion.div 
             key="results"
             initial={{ opacity: 0 }}
@@ -133,7 +145,7 @@ const MyBookings = () => {
             className="space-y-8"
           >
             <h3 className="text-2xl font-extrabold text-gray-800 dark:text-gray-200 mb-8 px-2 flex items-center tracking-tight">
-              Found {bookings.length} booking{bookings.length !== 1 ? 's' : ''} for <span className="text-blue-600 dark:text-blue-400 ml-3">{submittedEmail}</span>
+              {authUser ? 'Your upcoming sessions' : `Bookings for ${submittedEmail}`}
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -174,7 +186,7 @@ const MyBookings = () => {
                     
                     <div className="flex items-center text-gray-700 dark:text-gray-300 bg-blue-50/30 dark:bg-blue-900/10 p-4 rounded-2xl border border-blue-100/30 dark:border-blue-900/20">
                       <div className="bg-white dark:bg-slate-900 p-2 rounded-lg shadow-sm mr-4 shrink-0">
-                        <User className="w-5 h-5 text-blue-500" />
+                        <UserIcon className="w-5 h-5 text-blue-500" />
                       </div>
                       <span className="text-sm font-bold tracking-tight">Booked for: <span className="text-gray-900 dark:text-white underline decoration-blue-200">{booking.name}</span></span>
                     </div>

@@ -97,3 +97,14 @@ exports.getBookingsByEmail = async (req, res, next) => {
     next(error);
   }
 };
+
+exports.getAllBookings = async (req, res, next) => {
+  try {
+    const bookings = await Booking.find()
+      .populate('expertId', 'name category avatar')
+      .sort({ createdAt: -1 });
+    res.json({ success: true, bookings });
+  } catch (error) {
+    next(error);
+  }
+};

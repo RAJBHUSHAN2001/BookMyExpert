@@ -7,6 +7,7 @@ const cors = require('cors');
 
 const expertRoutes = require('./routes/experts');
 const bookingRoutes = require('./routes/bookings');
+const authRoutes = require('./routes/auth');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -29,6 +30,7 @@ app.use((req, res, next) => {
 
 app.use('/api/experts', expertRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/auth', authRoutes);
 
 // --- Static File Serving for Production ---
 if (process.env.NODE_ENV === 'production') {

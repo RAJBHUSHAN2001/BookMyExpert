@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { CalendarDays, Home, Sun, Moon } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { CalendarDays, Home, Sun, Moon, LayoutDashboard, LogIn, LogOut, User } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAuth } from '../AuthContext';
 
 const Navbar = () => {
   const location = useLocation();
-  // Initialize from document class to ensure sync with index.html script
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [isDark, setIsDark] = useState(document.documentElement.classList.contains('dark'));
 
   const toggleTheme = () => {
@@ -18,6 +20,11 @@ const Navbar = () => {
       document.documentElement.classList.remove('dark');
       localStorage.theme = 'light';
     }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
   };
 
   const isActive = (path) => location.pathname === path;
@@ -56,17 +63,61 @@ const Navbar = () => {
                 <Home className={`w-4 h-4 mr-2 ${isActive('/') ? 'text-blue-600' : 'text-gray-400'}`} />
                 <span className="hidden sm:inline">Home</span>
               </Link>
-              <Link 
-                to="/my-bookings" 
-                className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  isActive('/my-bookings') 
-                  ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 shadow-sm' 
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100/50 dark:hover:bg-slate-800/50 hover:text-gray-900 dark:hover:text-white'
-                }`}
-              >
-                <CalendarDays className={`w-4 h-4 mr-2 ${isActive('/my-bookings') ? 'text-blue-600' : 'text-gray-400'}`} />
-                <span className="hidden sm:inline">My Bookings</span>
-              </Link>
+              
+              {user ? (
+                <>
+                  {user.role === 'user' && (
+                    <Link 
+                      to="/my-bookings" 
+                      className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        isActive('/my-bookings') 
+                        ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 shadow-sm' 
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100/50 dark:hover:bg-slate-800/50 hover:text-gray-900 dark:hover:text-white'
+                      }`}
+                    >
+                      <CalendarDays className={`w-4 h-4 mr-2 ${isActive('/my-bookings') ? 'text-blue-600' : 'text-gray-400'}`} />
+                      <span className="hidden sm:inline">My Bookings</span>
+                    </Link>
+                  )}
+                  {user.role === 'expert' && (
+                    <Link 
+                      to="/admin" 
+                      className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        isActive('/admin') 
+                        ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 shadow-sm' 
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100/50 dark:hover:bg-slate-800/50 hover:text-gray-900 dark:hover:text-white'
+                      }`}
+                    >
+                      <LayoutDashboard className={`w-4 h-4 mr-2 ${isActive('/admin') ? 'text-indigo-600' : 'text-gray-400'}`} />
+                      <span className="hidden sm:inline">Admin Panel</span>
+                    </Link>
+                  )}
+                  <button 
+                    onClick={handleLogout}
+                    className="inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">Logout</span>
+                  </button>
+                  <div className="hidden lg:flex items-center ml-4 pl-4 border-l border-gray-100 dark:border-slate-800">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-xs mr-2">
+                      {user.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="text-left">
+                      <p className="text-[10px] font-black uppercase text-gray-400 leading-none mb-1">{user.role}</p>
+                      <p className="text-xs font-bold text-gray-900 dark:text-white leading-none">{user.name}</p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <Link 
+                  to="/login" 
+                  className="inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-200 dark:shadow-none transition-all"
+                >
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Login
+                </Link>
+              )}
             </motion.div>
 
             <motion.button

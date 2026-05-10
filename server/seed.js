@@ -1,6 +1,8 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 const Expert = require('./models/Expert');
+const User = require('./models/User');
+const bcrypt = require('bcryptjs');
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/bookmyexpert';
 
@@ -33,8 +35,10 @@ const seedDB = async () => {
     console.log('Connected to MongoDB');
 
     await Expert.deleteMany({});
-    console.log('Cleared existing experts');
+    await User.deleteMany({});
+    console.log('Cleared existing data');
 
+    const hashedPassword = await bcrypt.hash('admin123', 10);
     const expertsToCreate = expertTemplates.map(template => {
       const slots = [];
       const today = new Date();
@@ -42,8 +46,6 @@ const seedDB = async () => {
         const nextDate = new Date(today);
         nextDate.setDate(today.getDate() + d);
         const dateStr = nextDate.toISOString().split('T')[0];
-        
-        // Pick 1-3 random times for each day
         const numSlots = Math.floor(Math.random() * 3) + 1;
         for (let t = 0; t < numSlots; t++) {
           const time = times[Math.floor(Math.random() * times.length)];
@@ -52,21 +54,7 @@ const seedDB = async () => {
           }
         }
       }
-      
-      // Ensure exactly 10 slots
       while(slots.length > 10) slots.pop();
-      while(slots.length < 10) {
-        const fallbackDate = new Date(today);
-        fallbackDate.setDate(today.getDate() + 1);
-        const dateStr = fallbackDate.toISOString().split('T')[0];
-        const time = times[slots.length % times.length];
-        if (!slots.some(s => s.date === dateStr && s.time === time)) {
-          slots.push({ date: dateStr, time, isBooked: false });
-        } else {
-          slots.push({ date: `2099-01-${(slots.length + 1).toString().padStart(2, '0')}`, time, isBooked: false });
-        }
-      }
-
       return {
         ...template,
         experience: Math.floor(Math.random() * 19) + 2,
@@ -76,8 +64,25 @@ const seedDB = async () => {
       };
     });
 
-    await Expert.create(expertsToCreate);
-    console.log(`Seeded ${expertsToCreate.length} experts with high-quality images`);
+    const createdExperts = await Expert.create(expertsToCreate);
+    console.log(`Seeded ${createdExperts.length} experts`);
+
+    const expertUsers = createdExperts.map(exp => ({
+      name: exp.name,
+      email: `${exp.name.toLowerCase().replace(/\s/g, '')}@expert.com`,
+      password: hashedPassword,
+      role: 'expert'
+    }));
+
+    expertUsers.push({
+      name: 'Global Admin',
+      email: 'admin@expert.com',
+      password: hashedPassword,
+      role: 'expert'
+    });
+
+    await User.insertMany(expertUsers);
+    console.log(`Created ${expertUsers.length} user accounts with password "admin123"`);
 
     mongoose.disconnect();
   } catch (error) {

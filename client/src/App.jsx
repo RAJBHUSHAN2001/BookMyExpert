@@ -5,10 +5,15 @@ import ExpertList from './pages/ExpertList';
 import ExpertDetail from './pages/ExpertDetail';
 import Booking from './pages/Booking';
 import MyBookings from './pages/MyBookings';
+import AdminDashboard from './pages/AdminDashboard';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import { AuthProvider } from './AuthContext';
 
 function App() {
   return (
-    <BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
       <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex flex-col transition-colors duration-300">
         <Toaster 
           position="top-center"
@@ -40,10 +45,14 @@ function App() {
             <Route path="/experts/:id" element={<ExpertDetail />} />
             <Route path="/book/:expertId" element={<Booking />} />
             <Route path="/my-bookings" element={<MyBookings />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
           </Routes>
         </main>
       </div>
-    </BrowserRouter>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 
